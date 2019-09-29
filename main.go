@@ -53,20 +53,16 @@ func run() error {
 		return err
 	}
 
-	tmpl, err := template.New("command").Parse(action.Command)
+	cmd, err := generateCommand(action.Command, pod)
 	if err != nil {
 		return err
 	}
-	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, pod)
-	if err != nil {
-		return err
-	}
-	cmd := strings.Split(buf.String(), " ")
+
 	out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput()
 	if err != nil {
 		return err
 	}
+
 	fmt.Println(string(out))
 	return nil
 }
@@ -183,4 +179,18 @@ func selectActions(actions Actions) (*Action, error) {
 	cmdTmpl := actions[i]
 
 	return &cmdTmpl, nil
+}
+
+func generateCommand(tmplStr string, data interface{}) ([]string, error) {
+	tmpl, err := template.New("command").Parse(tmplStr)
+	if err != nil {
+		return nil, err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, data)
+	if err != nil {
+		return nil, err
+	}
+
+	return strings.Split(buf.String(), " "), nil
 }

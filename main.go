@@ -142,8 +142,8 @@ func selectPod(clientset *kubernetes.Clientset) (*corev1.Pod, error) {
 	}
 
 	searcher := func(input string, index int) bool {
-		pepper := pods.Items[index]
-		name := strings.Replace(strings.ToLower(pepper.Name), " ", "", -1)
+		pod := pods.Items[index]
+		name := strings.Replace(strings.ToLower(pod.Name), " ", "", -1)
 		input = strings.Replace(strings.ToLower(input), " ", "", -1)
 
 		return strings.Contains(name, input)

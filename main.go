@@ -21,9 +21,23 @@ func run() error {
 		return err
 	}
 
-	pod, err := k8s.SelectPod()
+	kind, err := k8s.SelectKind()
 	if err != nil {
 		return err
+	}
+
+	var obj interface{}
+	switch kind {
+	case "node":
+		obj, err = k8s.SelectNode()
+		if err != nil {
+			return err
+		}
+	case "pod":
+		obj, err = k8s.SelectPod()
+		if err != nil {
+			return err
+		}
 	}
 
 	actions, err := actions.New()
@@ -35,7 +49,7 @@ func run() error {
 		return errors.Wrap(err, "failed to actions.Select()")
 	}
 
-	cmd, err := action.GenerateCommand(pod)
+	cmd, err := action.GenerateCommand(obj)
 	if err != nil {
 		return errors.Wrap(err, "failed to actions.GenerateCommand()")
 	}

@@ -46,6 +46,62 @@ type K8s struct {
 	client *kubernetes.Clientset
 }
 
+func (k *K8s) SelectKind() (string, error) {
+	kinds := []string{"node", "pods"}
+	prompt := promptui.Select{
+		Label:             "Kinds",
+		Items:             kinds,
+		StartInSearchMode: true,
+	}
+
+	_, item, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+
+	return item, nil
+}
+
+func (k *K8s) SelectNode() (*corev1.Node, error) {
+	nodes, err := k.client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "> {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "  {{ .Name | red | cyan }}",
+		Details: `
+--------- Pepper ----------
+{{ "Name:" | faint }}	{{ .Name }}`,
+	}
+
+	searcher := func(input string, index int) bool {
+		node := nodes.Items[index]
+		name := strings.Replace(strings.ToLower(node.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:             "Nodes",
+		Items:             nodes.Items,
+		Searcher:          searcher,
+		StartInSearchMode: true,
+		Templates:         templates,
+	}
+
+	i, _, err := prompt.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	return &nodes.Items[i], nil
+}
+
 func (k *K8s) SelectPod() (*corev1.Pod, error) {
 	pods, err := k.client.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
 	if err != nil {

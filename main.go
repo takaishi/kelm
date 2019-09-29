@@ -153,6 +153,7 @@ func selectPod(clientset *kubernetes.Clientset) (*corev1.Pod, error) {
 		Label:     "Pods",
 		Items:     pods.Items,
 		Searcher:  searcher,
+		StartInSearchMode: true,
 		Templates: templates,
 	}
 

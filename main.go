@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"github.com/manifoldco/promptui"
+	"html/template"
+	"io/ioutil"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -12,6 +15,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sigs.k8s.io/yaml"
 	"strings"
 )
 
@@ -22,6 +26,18 @@ func main() {
 }
 
 func run() error {
+	d, err := ioutil.ReadFile("./config.yaml")
+	if err != nil {
+		return err
+	}
+
+	cfg := &Config{}
+	err = yaml.Unmarshal(d, cfg)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("%+v\n", cfg)
+
 	clientset, err := kubeClient()
 	if err != nil {
 		return err
@@ -32,16 +48,46 @@ func run() error {
 		return err
 	}
 
-	actionPrompt := promptui.Select{
-		Label: "actions",
-		Items: []string{"get", "describe"},
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "> {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "  {{ .Name | red | cyan }}",
 	}
 
-	_, actionName, err := actionPrompt.Run()
+	actions := cfg.Actions
+	searcher := func(input string, index int) bool {
+		pepper := actions[index]
+		name := strings.Replace(strings.ToLower(pepper.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	actionPrompt := promptui.Select{
+		Label:     "actions",
+		Items:     actions,
+		Templates: templates,
+		Searcher:  searcher,
+	}
+
+	i, _, err := actionPrompt.Run()
 	if err != nil {
 		return err
 	}
-	out, err := exec.Command("kubectl", "-n", "kube-system", actionName, "pod", pod.Name).CombinedOutput()
+	cmdTmpl := cfg.Actions[i].Command
+
+	tmpl, err := template.New("command").Parse(cmdTmpl)
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	err = tmpl.Execute(&buf, pod)
+	if err != nil {
+		return err
+	}
+	cmd := strings.Split(buf.String(), " ")
+	out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput()
 	if err != nil {
 		return err
 	}
@@ -116,4 +162,15 @@ func selectPod(clientset *kubernetes.Clientset) (*corev1.Pod, error) {
 	}
 
 	return &pods.Items[i], nil
+}
+
+type Config struct {
+	Actions Actions `yaml:"actions"`
+}
+
+type Actions []Action
+
+type Action struct {
+	Name    string `yaml:"name"`
+	Command string `yaml:"command"`
 }

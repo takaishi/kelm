@@ -47,7 +47,7 @@ type K8s struct {
 }
 
 func (k *K8s) SelectKind() (string, error) {
-	kinds := []string{"node", "pods"}
+	kinds := []string{"node", "pod"}
 	prompt := promptui.Select{
 		Label:             "Kinds",
 		Items:             kinds,

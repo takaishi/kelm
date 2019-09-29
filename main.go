@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/manifoldco/promptui"
+	"github.com/pkg/errors"
+	"github.com/takaishi/ik/pkg/actions"
 	"github.com/takaishi/ik/pkg/k8s"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"os/exec"
-	"sigs.k8s.io/yaml"
 	"strings"
 )
 
@@ -20,18 +20,6 @@ func main() {
 }
 
 func run() error {
-	d, err := ioutil.ReadFile("./config.yaml")
-	if err != nil {
-		return err
-	}
-
-	cfg := &Config{}
-	err = yaml.Unmarshal(d, cfg)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("%+v\n", cfg)
-
 	k8s, err := k8s.New()
 	if err != nil {
 		return err
@@ -42,14 +30,18 @@ func run() error {
 		return err
 	}
 
-	action, err := selectActions(cfg.Actions)
+	actions, err := actions.New()
 	if err != nil {
 		return err
 	}
-
-	cmd, err := generateCommand(action.Command, pod)
+	action, err := actions.Select()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to actions.Select()")
+	}
+
+	cmd, err := action.GenerateCommand(pod)
+	if err != nil {
+		return errors.Wrap(err, "failed to actions.GenerateCommand()")
 	}
 
 	out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput()

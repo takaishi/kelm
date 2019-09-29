@@ -10,6 +10,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 )
@@ -54,7 +55,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("kubectl %s %s\n", actionName, pod.Name)
+	out, err := exec.Command("kubectl", "-n", "kube-system", actionName, "pod", pod.Name).CombinedOutput()
+	if err != nil {
+		return err
+	}
+	fmt.Println(string(out))
 	return nil
 }
 

@@ -48,36 +48,12 @@ func run() error {
 		return err
 	}
 
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}?",
-		Active:   "> {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
-		Selected: "  {{ .Name | red | cyan }}",
-	}
-
-	actions := cfg.Actions
-	searcher := func(input string, index int) bool {
-		pepper := actions[index]
-		name := strings.Replace(strings.ToLower(pepper.Name), " ", "", -1)
-		input = strings.Replace(strings.ToLower(input), " ", "", -1)
-
-		return strings.Contains(name, input)
-	}
-
-	actionPrompt := promptui.Select{
-		Label:     "actions",
-		Items:     actions,
-		Templates: templates,
-		Searcher:  searcher,
-	}
-
-	i, _, err := actionPrompt.Run()
+	action, err := selectActions(cfg.Actions)
 	if err != nil {
 		return err
 	}
-	cmdTmpl := cfg.Actions[i].Command
 
-	tmpl, err := template.New("command").Parse(cmdTmpl)
+	tmpl, err := template.New("command").Parse(action.Command)
 	if err != nil {
 		return err
 	}
@@ -150,11 +126,11 @@ func selectPod(clientset *kubernetes.Clientset) (*corev1.Pod, error) {
 	}
 
 	prompt := promptui.Select{
-		Label:     "Pods",
-		Items:     pods.Items,
-		Searcher:  searcher,
+		Label:             "Pods",
+		Items:             pods.Items,
+		Searcher:          searcher,
 		StartInSearchMode: true,
-		Templates: templates,
+		Templates:         templates,
 	}
 
 	i, _, err := prompt.Run()
@@ -174,4 +150,37 @@ type Actions []Action
 type Action struct {
 	Name    string `yaml:"name"`
 	Command string `yaml:"command"`
+}
+
+func selectActions(actions Actions) (*Action, error) {
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "> {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "  {{ .Name | red | cyan }}",
+	}
+
+	searcher := func(input string, index int) bool {
+		pepper := actions[index]
+		name := strings.Replace(strings.ToLower(pepper.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	actionPrompt := promptui.Select{
+		Label:             "actions",
+		Items:             actions,
+		Templates:         templates,
+		Searcher:          searcher,
+		StartInSearchMode: true,
+	}
+
+	i, _, err := actionPrompt.Run()
+	if err != nil {
+		return nil, err
+	}
+	cmdTmpl := actions[i]
+
+	return &cmdTmpl, nil
 }

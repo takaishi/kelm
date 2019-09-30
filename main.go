@@ -5,6 +5,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/takaishi/ik/pkg/actions"
 	"github.com/takaishi/ik/pkg/k8s"
+	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"os/exec"
 )
@@ -26,7 +27,7 @@ func run() error {
 		return err
 	}
 
-	var obj interface{}
+	var obj runtime.Object
 	switch kind {
 	case "node":
 		obj, err = k8s.SelectNode()
@@ -38,13 +39,18 @@ func run() error {
 		if err != nil {
 			return err
 		}
+	case "crd":
+		obj, err = k8s.SelectCRD()
+		if err != nil {
+			return err
+		}
 	}
 
 	actions, err := actions.New()
 	if err != nil {
 		return err
 	}
-	action, err := actions.Select()
+	action, err := actions[kind].Select()
 	if err != nil {
 		return errors.Wrap(err, "failed to actions.Select()")
 	}

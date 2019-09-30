@@ -9,7 +9,7 @@ import (
 	"text/template"
 )
 
-func New() (Actions, error) {
+func New() (map[string]*Actions, error) {
 	d, err := ioutil.ReadFile("./config.yaml")
 	if err != nil {
 		return nil, err
@@ -21,11 +21,11 @@ func New() (Actions, error) {
 		return nil, err
 	}
 
-	return cfg.Actions, nil
+	return cfg.ActionsMap, nil
 }
 
 type Config struct {
-	Actions Actions `yaml:"actions"`
+	ActionsMap map[string]*Actions `yaml:"actions"`
 }
 
 type Actions []Action

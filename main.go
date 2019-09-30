@@ -22,6 +22,12 @@ func run() error {
 		return err
 	}
 
+	namespace, err := k8s.SelectNamespace()
+	if err != nil {
+		return err
+	}
+	k8s.SetNamespace(namespace)
+
 	kind, err := k8s.SelectKind()
 	if err != nil {
 		return err

@@ -34,7 +34,7 @@ func New() (*K8s, error) {
 		return nil, err
 	}
 
-	return &K8s{client: clientset, config: config}, nil
+	return &K8s{client: clientset, config: config, namespace: "default"}, nil
 }
 
 func homeDir() string {
@@ -46,12 +46,58 @@ func homeDir() string {
 }
 
 type K8s struct {
-	client *kubernetes.Clientset
-	config *restclient.Config
+	client    *kubernetes.Clientset
+	config    *restclient.Config
+	namespace string
+}
+
+func (k *K8s) SetNamespace(n string) {
+	k.namespace = n
+}
+
+func (k *K8s) SelectNamespace() (string, error) {
+	r, err := k.client.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "> {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "  {{ .Name | red | cyan }}",
+		Details: `
+--------- Pepper ----------
+{{ "Name:" | faint }}	{{ .Name }}`,
+	}
+
+	searcher := func(input string, index int) bool {
+		namespace := r.Items[index]
+		name := strings.Replace(strings.ToLower(namespace.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:             "Namespace?",
+		Items:             r.Items,
+		StartInSearchMode: true,
+		Templates:         templates,
+		Searcher:          searcher,
+	}
+
+	i, _, err := prompt.Run()
+	if err != nil {
+		return "", err
+	}
+
+	return r.Items[i].Name, nil
 }
 
 func (k *K8s) SelectKind() (string, error) {
 	kinds := []string{"node", "pod", "crd"}
+
 	prompt := promptui.Select{
 		Label:             "Kinds",
 		Items:             kinds,
@@ -107,7 +153,7 @@ func (k *K8s) SelectNode() (*corev1.Node, error) {
 }
 
 func (k *K8s) SelectPod() (*corev1.Pod, error) {
-	pods, err := k.client.CoreV1().Pods("kube-system").List(metav1.ListOptions{})
+	pods, err := k.client.CoreV1().Pods(k.namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, err
 	}

@@ -1,4 +1,4 @@
-module github.com/takaishi/ik
+module github.com/takaishi/kelm
 
 go 1.12
 

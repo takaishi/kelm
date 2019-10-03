@@ -1,0 +1,42 @@
+# This is an example goreleaser.yaml file with some sane defaults.
+# Make sure to check the documentation at http://goreleaser.com
+before:
+  hooks:
+    # you may remove this if you don't use vgo
+    - go mod download
+    # you may remove this if you don't need go generate
+    - go generate ./...
+builds:
+  - env:
+      - CGO_ENABLED=0
+    ldflags:
+      -X github.com/takaishi/kelm/config.Version={{.Version}}
+archive:
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+brew:
+  github:
+    owner: takaishi
+    name: homebrew-fomulas
+  commit_author:
+    name: goreleaserbot
+    email: goreleaser@carlosbecker.com
+  description: "CLI tool to Generate and insert markdown's table of contents"
+  homepage: "https://github.com/takaishi/kelm"
+  install: |
+    bin.install Dir['kelm']
+  test: |
+    system "#{bin}/kelm"

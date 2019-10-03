@@ -6,6 +6,7 @@ import (
 	crdv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -77,11 +78,45 @@ func (k *K8s) SelectNamespace() (string, error) {
 }
 
 func (k *K8s) SelectKind() (string, error) {
-	kinds := []string{"node", "pod", "crd"}
+	kinds := []metav1.APIResource{}
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(k.config)
+	if err != nil {
+		return "", err
+	}
+	lists, err := discoveryClient.ServerPreferredResources()
+	if err != nil {
+		return "", err
+	}
+
+	for _, list := range lists {
+		for _, resource := range list.APIResources {
+			kinds = append(kinds, resource)
+		}
+	}
+
+	searcher := func(input string, index int) bool {
+		kind := kinds[index]
+		name := strings.Replace(strings.ToLower(kind.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "> {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "  {{ .Name | red | cyan }}",
+		Details: `
+--------- Pepper ----------
+{{ "Name:" | faint }}	{{ .Name }}`,
+	}
 
 	prompt := promptui.Select{
 		Label:             "Kinds",
 		Items:             kinds,
+		Searcher:          searcher,
+		Templates:         templates,
 		StartInSearchMode: true,
 	}
 

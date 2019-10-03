@@ -11,7 +11,7 @@ import (
 	"text/template"
 )
 
-func NewActionRunner() (*ActionRunner, error) {
+func NewActionRunner(confPath string) (*ActionRunner, error) {
 	defaultActions := []Action{
 		{
 			Name:    "get",
@@ -23,8 +23,8 @@ func NewActionRunner() (*ActionRunner, error) {
 		},
 	}
 	cfg := &Config{}
-	if exists("./config.yaml") {
-		d, err := ioutil.ReadFile("./config.yaml")
+	if exists(confPath) {
+		d, err := ioutil.ReadFile(confPath)
 		if err != nil {
 			return nil, err
 		}

@@ -39,6 +39,10 @@ func run() error {
 		cli.StringFlag{
 			Name: "namespace, n",
 		},
+		cli.StringFlag{
+			Name:  "config, c",
+			Value: filepath.Join(homeDir(), ".kelm"),
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
@@ -84,7 +88,7 @@ func run() error {
 				return err
 			}
 		}
-		runner, err := actions.NewActionRunner()
+		runner, err := actions.NewActionRunner(c.String("config"))
 		if err != nil {
 			return err
 		}

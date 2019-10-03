@@ -6,4 +6,4 @@ run:
 	go run ./main.go
 
 build: fmt
-	go build -o ik ./main.go
+	go build -o kelm ./main.go

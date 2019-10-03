@@ -49,14 +49,16 @@ func run() error {
 		}
 
 		namespace := c.String("namespace")
-		if namespace != "" {
+		if namespace == "" {
 			namespace, err := k8s.SelectNamespace()
 			if err != nil {
 				return err
 			}
+			log.Printf("[DEBUG] namespace: %s\n", namespace)
+			k8s.SetNamespace(namespace)
+		} else {
 			k8s.SetNamespace(namespace)
 		}
-		k8s.SetNamespace(namespace)
 
 		kind, err := k8s.SelectKind()
 		if err != nil {

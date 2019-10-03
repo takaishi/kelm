@@ -1,7 +1,6 @@
 package k8s
 
 import (
-	"flag"
 	"github.com/manifoldco/promptui"
 	corev1 "k8s.io/api/core/v1"
 	crdv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
@@ -10,21 +9,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"os"
-	"path/filepath"
 	"strings"
 )
 
-func New() (*K8s, error) {
-	var kubeconfig *string
-	if home := homeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+func New(kubeconfigPath string) (*K8s, error) {
+	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
 		return nil, err
 	}
@@ -35,14 +24,6 @@ func New() (*K8s, error) {
 	}
 
 	return &K8s{client: clientset, config: config, namespace: "default"}, nil
-}
-
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
-
 }
 
 type K8s struct {

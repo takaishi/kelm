@@ -64,7 +64,7 @@ func run() error {
 		if err != nil {
 			return err
 		}
-
+		log.Printf("[DEBUG] kind: %+v\n", kind)
 		var obj runtime.Object
 		switch kind {
 		case "node":
@@ -72,7 +72,8 @@ func run() error {
 			if err != nil {
 				return err
 			}
-		case "pod":
+		case "pods":
+			log.Println("[DEBUG] select pod")
 			obj, err = k8s.SelectPod()
 			if err != nil {
 				return err
@@ -83,20 +84,21 @@ func run() error {
 				return err
 			}
 		}
-
-		actions, err := actions.New()
+		runner, err := actions.NewActionRunner()
 		if err != nil {
 			return err
 		}
-		action, err := actions[kind].Select()
+		action, err := runner.Select(kind)
 		if err != nil {
-			return errors.Wrap(err, "failed to actions.Select()")
+			return errors.Wrap(err, "failed to runner.Select()")
 		}
 
-		cmd, err := action.GenerateCommand(obj)
+		//kind := obj.GetObjectKind().GroupVersionKind().Kind
+		cmd, err := action.GenerateCommand(obj, kind)
 		if err != nil {
-			return errors.Wrap(err, "failed to actions.GenerateCommand()")
+			return errors.Wrap(err, "failed to runner.GenerateCommand()")
 		}
+		log.Printf("[DEBUG] cmd: %+v\n", cmd)
 
 		out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput()
 		if err != nil {

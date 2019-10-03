@@ -120,12 +120,12 @@ func (k *K8s) SelectKind() (string, error) {
 		StartInSearchMode: true,
 	}
 
-	_, item, err := prompt.Run()
+	i, _, err := prompt.Run()
 	if err != nil {
 		return "", err
 	}
 
-	return item, nil
+	return kinds[i].Name, nil
 }
 
 func (k *K8s) SelectNode() (*corev1.Node, error) {

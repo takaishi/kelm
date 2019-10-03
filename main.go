@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/pkg/errors"
-	"github.com/takaishi/ik/pkg/actions"
-	"github.com/takaishi/ik/pkg/k8s"
+	"github.com/takaishi/kelm/pkg/actions"
+	"github.com/takaishi/kelm/pkg/k8s"
 	"github.com/urfave/cli"
 	"k8s.io/apimachinery/pkg/runtime"
 	"log"

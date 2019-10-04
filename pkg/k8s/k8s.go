@@ -58,7 +58,7 @@ func (k *K8s) SelectNamespace() (string, error) {
 		Inactive: "  {{ .Name | cyan }}",
 		Selected: "  {{ .Name | red | cyan }}",
 		Details: `
---------- Pepper ----------
+--------- Namespace ----------
 {{ "Name:" | faint }}	{{ .Name }}`,
 	}
 
@@ -117,7 +117,7 @@ func (k *K8s) SelectKind() (string, error) {
 		Inactive: "  {{ .Name | cyan }}",
 		Selected: "  {{ .Name | red | cyan }}",
 		Details: `
---------- Pepper ----------
+--------- Kind ----------
 {{ "Name:" | faint }}	{{ .Name }}`,
 	}
 
@@ -162,7 +162,7 @@ func (k *K8s) SelectObjects(kind string) (*runtime.Object, error) {
 		Inactive: "  {{ .Name | cyan }}",
 		Selected: "  {{ .Name | red | cyan }}",
 		Details: `
---------- Pepper ----------
+--------- Object ----------
 {{ "Name:" | faint }}	{{ .Name }}`,
 	}
 
@@ -202,7 +202,7 @@ func (k *K8s) SelectNode() (*corev1.Node, error) {
 		Inactive: "  {{ .Name | cyan }}",
 		Selected: "  {{ .Name | red | cyan }}",
 		Details: `
---------- Pepper ----------
+--------- Node ----------
 {{ "Name:" | faint }}	{{ .Name }}`,
 	}
 
@@ -242,7 +242,7 @@ func (k *K8s) SelectPod() (*corev1.Pod, error) {
 		Inactive: "  {{ .Name | cyan }}",
 		Selected: "  {{ .Name | red | cyan }}",
 		Details: `
---------- Pepper ----------
+--------- Pod ----------
 {{ "Name:" | faint }}	{{ .Name }}`,
 	}
 
@@ -286,7 +286,7 @@ func (k *K8s) SelectCRD() (*crdv1beta1.CustomResourceDefinition, error) {
 		Inactive: "  {{ .Name | cyan }}",
 		Selected: "  {{ .Name | red | cyan }}",
 		Details: `
---------- Pepper ----------
+--------- CRD ----------
 {{ "Name:" | faint }}	{{ .Name }}`,
 	}
 

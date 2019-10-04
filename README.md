@@ -26,7 +26,7 @@ For example:
 actions:
   pods:
     - name: "log"
-      command: "kubectl -n {{ .Namespace }} log {{ .Name }}"
+      command:  "kubectl -n {{ .Namespace }} log {{ .Obj.metadata.name }}"
 
 ```
 

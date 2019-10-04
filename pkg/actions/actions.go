@@ -2,24 +2,26 @@ package actions
 
 import (
 	"bytes"
+	"encoding/json"
 	"github.com/manifoldco/promptui"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/runtime"
 	"os"
 	"strings"
+
 	"text/template"
 )
 
-func NewActionRunner(confPath string) (*ActionRunner, error) {
+func NewActionRunner(namespace string, confPath string) (*ActionRunner, error) {
 	defaultActions := []Action{
 		{
 			Name:    "get",
-			Command: "kubectl -n {{ .Obj.Namespace }} get {{ ..Kind }} {{ .Obj.Name }}",
+			Command: "kubectl -n {{ .Namespace }} get {{ .Kind }} {{ .Obj.metadata.name }}",
 		},
 		{
 			Name:    "describe",
-			Command: "kubectl -n {{ .Obj.Namespace }} describe {{ .Kind }} {{ .Obj.Name }}",
+			Command: "kubectl -n {{ .Namespace }} describe {{ .Kind }} {{ .Obj.metadata.name }}",
 		},
 	}
 	cfg := &Config{}
@@ -36,6 +38,7 @@ func NewActionRunner(confPath string) (*ActionRunner, error) {
 	}
 
 	runner := &ActionRunner{
+		Namespace:      namespace,
 		ActionsMap:     cfg.ActionsMap,
 		DefaultActions: defaultActions,
 	}
@@ -48,6 +51,7 @@ type Config struct {
 }
 
 type ActionRunner struct {
+	Namespace      string
 	ActionsMap     map[string][]Action
 	DefaultActions []Action
 }
@@ -93,17 +97,26 @@ func (a *ActionRunner) Select(kind string) (*Action, error) {
 	return &cmdTmpl, nil
 }
 
-func (a *Action) GenerateCommand(obj runtime.Object, kind string) ([]string, error) {
-	data := map[string]interface{}{
-		"Obj":  obj,
-		"Kind": kind,
+func (a *ActionRunner) GenerateCommand(obj runtime.Object, kind string, action *Action) ([]string, error) {
+	data, err := json.Marshal(obj)
+	if err != nil {
+		return nil, err
 	}
-	tmpl, err := template.New("command").Parse(a.Command)
+	out := map[string]interface{}{}
+	if err := json.Unmarshal(data, &out); err != nil {
+		return nil, err
+	}
+	d := map[string]interface{}{
+		"Obj":       out,
+		"Namespace": a.Namespace,
+		"Kind":      kind,
+	}
+	tmpl, err := template.New("command").Parse(action.Command)
 	if err != nil {
 		return nil, err
 	}
 	var buf bytes.Buffer
-	err = tmpl.Execute(&buf, data)
+	err = tmpl.Execute(&buf, d)
 	if err != nil {
 		return nil, err
 	}

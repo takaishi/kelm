@@ -6,7 +6,6 @@ import (
 	"github.com/takaishi/kelm/pkg/actions"
 	"github.com/takaishi/kelm/pkg/k8s"
 	"github.com/urfave/cli"
-	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"os"
 	"os/exec"
@@ -58,7 +57,6 @@ func run() error {
 			if err != nil {
 				return err
 			}
-			log.Printf("[DEBUG] namespace: %s\n", namespace)
 			k8s.SetNamespace(namespace)
 		} else {
 			k8s.SetNamespace(namespace)
@@ -68,27 +66,13 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		log.Printf("[DEBUG] kind: %+v\n", kind)
-		var obj runtime.Object
-		switch kind {
-		case "node":
-			obj, err = k8s.SelectNode()
-			if err != nil {
-				return err
-			}
-		case "pods":
-			log.Println("[DEBUG] select pod")
-			obj, err = k8s.SelectPod()
-			if err != nil {
-				return err
-			}
-		case "crd":
-			obj, err = k8s.SelectCRD()
-			if err != nil {
-				return err
-			}
+
+		obj, err := k8s.SelectObjects(kind)
+		if err != nil {
+			return err
 		}
-		runner, err := actions.NewActionRunner(c.String("config"))
+
+		runner, err := actions.NewActionRunner(k8s.GetNamespace(), c.String("config"))
 		if err != nil {
 			return err
 		}
@@ -98,11 +82,10 @@ func run() error {
 		}
 
 		//kind := obj.GetObjectKind().GroupVersionKind().Kind
-		cmd, err := action.GenerateCommand(obj, kind)
+		cmd, err := runner.GenerateCommand(*obj, kind, action)
 		if err != nil {
 			return errors.Wrap(err, "failed to runner.GenerateCommand()")
 		}
-		log.Printf("[DEBUG] cmd: %+v\n", cmd)
 
 		out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput()
 		if err != nil {

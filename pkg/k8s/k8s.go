@@ -6,14 +6,19 @@ import (
 	crdv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+	cmdutil "k8s.io/kubectl/pkg/cmd/util"
+
 	"k8s.io/client-go/tools/clientcmd"
 	"strings"
 )
 
 func New(kubeconfigPath string) (*K8s, error) {
+
 	config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
 	if err != nil {
 		return nil, err
@@ -35,6 +40,10 @@ type K8s struct {
 
 func (k *K8s) SetNamespace(n string) {
 	k.namespace = n
+}
+
+func (k *K8s) GetNamespace() string {
+	return k.namespace
 }
 
 func (k *K8s) SelectNamespace() (string, error) {
@@ -126,6 +135,59 @@ func (k *K8s) SelectKind() (string, error) {
 	}
 
 	return kinds[i].Name, nil
+}
+
+func (k *K8s) SelectObjects(kind string) (*runtime.Object, error) {
+	kubeConfigFlags := genericclioptions.NewConfigFlags(true).WithDeprecatedPasswordFlag()
+	matchVersionKubeConfigFlags := cmdutil.NewMatchVersionFlags(kubeConfigFlags)
+
+	f := cmdutil.NewFactory(matchVersionKubeConfigFlags)
+
+	r := f.NewBuilder().
+		Unstructured().
+		NamespaceParam(k.namespace).DefaultNamespace().AllNamespaces(false).
+		ResourceTypeOrNameArgs(true, []string{kind}...).
+		ContinueOnError().
+		Latest().
+		Flatten().
+		Do()
+	infos, err := r.Infos()
+	if err != nil {
+		return nil, err
+	}
+
+	templates := &promptui.SelectTemplates{
+		Label:    "{{ . }}?",
+		Active:   "> {{ .Name | cyan }}",
+		Inactive: "  {{ .Name | cyan }}",
+		Selected: "  {{ .Name | red | cyan }}",
+		Details: `
+--------- Pepper ----------
+{{ "Name:" | faint }}	{{ .Name }}`,
+	}
+
+	searcher := func(input string, index int) bool {
+		info := infos[index]
+		name := strings.Replace(strings.ToLower(info.Name), " ", "", -1)
+		input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+		return strings.Contains(name, input)
+	}
+
+	prompt := promptui.Select{
+		Label:             "Objects",
+		Items:             infos,
+		Searcher:          searcher,
+		StartInSearchMode: true,
+		Templates:         templates,
+	}
+
+	i, _, err := prompt.Run()
+	if err != nil {
+		return nil, err
+	}
+
+	return &infos[i].Object, nil
 }
 
 func (k *K8s) SelectNode() (*corev1.Node, error) {

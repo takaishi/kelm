@@ -2,6 +2,8 @@
 
 Interactive kubernetes operator like a peco and Emacs helm.
 
+![](./docs/images/example.gif)
+
 ## Install
 
 ```

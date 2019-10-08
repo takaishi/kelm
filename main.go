@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/takaishi/kelm/pkg/actions"
 	"github.com/takaishi/kelm/pkg/k8s"
@@ -82,17 +81,19 @@ func run() error {
 		}
 
 		//kind := obj.GetObjectKind().GroupVersionKind().Kind
-		cmd, err := runner.GenerateCommand(*obj, kind, action)
+		cmdText, err := runner.GenerateCommand(*obj, kind, action)
 		if err != nil {
 			return errors.Wrap(err, "failed to runner.GenerateCommand()")
 		}
 
-		out, err := exec.Command(cmd[0], cmd[1:]...).CombinedOutput()
+		cmd := exec.Command(cmdText[0], cmdText[1:]...)
 		if err != nil {
 			return err
 		}
-
-		fmt.Println(string(out))
+		cmd.Stdin = os.Stdin
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		cmd.Run()
 		return nil
 	}
 

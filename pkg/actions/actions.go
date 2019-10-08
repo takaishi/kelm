@@ -7,6 +7,7 @@ import (
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/util/jsonpath"
 	"os"
 	"strings"
 
@@ -57,8 +58,14 @@ type ActionRunner struct {
 }
 
 type Action struct {
-	Name    string `yaml:"name"`
-	Command string `yaml:"command"`
+	Name      string     `yaml:"name"`
+	Variables []Variable `yaml:"variables,omitempty"`
+	Command   string     `yaml:"command"`
+}
+
+type Variable struct {
+	Name     string `yaml:"name"`
+	JSONPath string `yaml:jsonpath`
 }
 
 func (a *ActionRunner) Select(kind string) (*Action, error) {
@@ -106,11 +113,24 @@ func (a *ActionRunner) GenerateCommand(obj runtime.Object, kind string, action *
 	if err := json.Unmarshal(data, &out); err != nil {
 		return nil, err
 	}
+
 	d := map[string]interface{}{
 		"Obj":       out,
 		"Namespace": a.Namespace,
 		"Kind":      kind,
 	}
+
+	for _, variable := range action.Variables {
+		j := jsonpath.New(variable.Name)
+		j.Parse(variable.JSONPath)
+		tmp := new(bytes.Buffer)
+		err = j.Execute(tmp, out)
+		if err != nil {
+			return nil, err
+		}
+		d[variable.Name] = tmp.String()
+	}
+
 	tmpl, err := template.New("command").Parse(action.Command)
 	if err != nil {
 		return nil, err

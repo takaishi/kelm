@@ -239,46 +239,6 @@ func (k *K8s) SelectNode() (*corev1.Node, error) {
 	return &nodes.Items[i], nil
 }
 
-func (k *K8s) SelectPod() (*corev1.Pod, error) {
-	pods, err := k.client.CoreV1().Pods(k.namespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}?",
-		Active:   "> {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
-		Selected: "  {{ .Name | red | cyan }}",
-		Details: `
---------- Pod ----------
-{{ "Name:" | faint }}	{{ .Name }}`,
-	}
-
-	searcher := func(input string, index int) bool {
-		pod := pods.Items[index]
-		name := strings.Replace(strings.ToLower(pod.Name), " ", "", -1)
-		input = strings.Replace(strings.ToLower(input), " ", "", -1)
-
-		return strings.Contains(name, input)
-	}
-
-	prompt := promptui.Select{
-		Label:             "Pods",
-		Items:             pods.Items,
-		Searcher:          searcher,
-		StartInSearchMode: true,
-		Templates:         templates,
-	}
-
-	i, _, err := prompt.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	return &pods.Items[i], nil
-}
-
 func (k *K8s) SelectCRD() (*crdv1beta1.CustomResourceDefinition, error) {
 	client, err := clientset.NewForConfig(k.config)
 	if err != nil {

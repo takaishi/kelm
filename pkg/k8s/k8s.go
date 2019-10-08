@@ -2,9 +2,6 @@ package k8s
 
 import (
 	"github.com/manifoldco/promptui"
-	corev1 "k8s.io/api/core/v1"
-	crdv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
-	"k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -197,88 +194,4 @@ func (k *K8s) SelectObjects(kind string) (*runtime.Object, error) {
 	}
 
 	return &infos[i].Object, nil
-}
-
-func (k *K8s) SelectNode() (*corev1.Node, error) {
-	nodes, err := k.client.CoreV1().Nodes().List(metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}?",
-		Active:   "> {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
-		Selected: "  {{ .Name | red | cyan }}",
-		Details: `
---------- Node ----------
-{{ "Name:" | faint }}	{{ .Name }}`,
-	}
-
-	searcher := func(input string, index int) bool {
-		node := nodes.Items[index]
-		name := strings.Replace(strings.ToLower(node.Name), " ", "", -1)
-		input = strings.Replace(strings.ToLower(input), " ", "", -1)
-
-		return strings.Contains(name, input)
-	}
-
-	prompt := promptui.Select{
-		Label:             "Nodes",
-		Items:             nodes.Items,
-		Searcher:          searcher,
-		StartInSearchMode: true,
-		Templates:         templates,
-	}
-
-	i, _, err := prompt.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	return &nodes.Items[i], nil
-}
-
-func (k *K8s) SelectCRD() (*crdv1beta1.CustomResourceDefinition, error) {
-	client, err := clientset.NewForConfig(k.config)
-	if err != nil {
-		return nil, err
-	}
-	crds, err := client.ApiextensionsV1beta1().CustomResourceDefinitions().List(metav1.ListOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}?",
-		Active:   "> {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
-		Selected: "  {{ .Name | red | cyan }}",
-		Details: `
---------- CRD ----------
-{{ "Name:" | faint }}	{{ .Name }}`,
-	}
-
-	searcher := func(input string, index int) bool {
-		crd := crds.Items[index]
-		name := strings.Replace(strings.ToLower(crd.Name), " ", "", -1)
-		input = strings.Replace(strings.ToLower(input), " ", "", -1)
-
-		return strings.Contains(name, input)
-	}
-
-	prompt := promptui.Select{
-		Label:             "Pods",
-		Items:             crds.Items,
-		Searcher:          searcher,
-		StartInSearchMode: true,
-		Templates:         templates,
-	}
-
-	i, _, err := prompt.Run()
-	if err != nil {
-		return nil, err
-	}
-
-	return &crds.Items[i], nil
 }

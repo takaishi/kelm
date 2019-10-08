@@ -29,6 +29,12 @@ actions:
   pods:
     - name: "log"
       command:  "kubectl -n {{ .Namespace }} log {{ .Obj.metadata.name }}"
+  nodes:
+    - name: "ssh"
+      variables:
+        - name: address
+          jsonpath: '{.status.addresses[?(@.type=="InternalIP")].address}'
+      command: 'ssh {{ .address }}'
 
 ```
 

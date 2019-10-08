@@ -100,7 +100,6 @@ func action(c *cli.Context) error {
 		return errors.Wrap(err, "failed to runner.Select()")
 	}
 
-	//kind := obj.GetObjectKind().GroupVersionKind().Kind
 	cmdText, err := runner.GenerateCommand(*obj, kind, action)
 	if err != nil {
 		return errors.Wrap(err, "failed to runner.GenerateCommand()")

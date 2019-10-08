@@ -36,6 +36,7 @@ type K8s struct {
 	client    *kubernetes.Clientset
 	config    *restclient.Config
 	namespace string
+	kind      string
 }
 
 func (k *K8s) SetNamespace(n string) {
@@ -44,6 +45,14 @@ func (k *K8s) SetNamespace(n string) {
 
 func (k *K8s) GetNamespace() string {
 	return k.namespace
+}
+
+func (k *K8s) SetKind(s string) {
+	k.kind = s
+}
+
+func (k *K8s) GetKind() string {
+	return k.kind
 }
 
 func (k *K8s) SelectNamespace() (string, error) {

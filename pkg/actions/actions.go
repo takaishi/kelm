@@ -3,6 +3,7 @@ package actions
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"github.com/manifoldco/promptui"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
@@ -68,40 +69,48 @@ type Variable struct {
 	JSONPath string `yaml:jsonpath`
 }
 
-func (a *ActionRunner) Select(kind string) (*Action, error) {
+func (a *ActionRunner) Select(kind string, actionName string) (*Action, error) {
 	actions := a.ActionsMap[kind]
 	actions = append(actions, a.DefaultActions...)
 
-	templates := &promptui.SelectTemplates{
-		Label:    "{{ . }}?",
-		Active:   "> {{ .Name | cyan }}",
-		Inactive: "  {{ .Name | cyan }}",
-		Selected: "  {{ .Name | red | cyan }}",
+	if actionName == "" {
+
+		templates := &promptui.SelectTemplates{
+			Label:    "{{ . }}?",
+			Active:   "> {{ .Name | cyan }}",
+			Inactive: "  {{ .Name | cyan }}",
+			Selected: "  {{ .Name | red | cyan }}",
+		}
+
+		searcher := func(input string, index int) bool {
+			action := actions[index]
+			name := strings.Replace(strings.ToLower(action.Name), " ", "", -1)
+			input = strings.Replace(strings.ToLower(input), " ", "", -1)
+
+			return strings.Contains(name, input)
+		}
+
+		actionPrompt := promptui.Select{
+			Label:             "actions",
+			Items:             actions,
+			Templates:         templates,
+			Searcher:          searcher,
+			StartInSearchMode: true,
+		}
+
+		i, _, err := actionPrompt.Run()
+		if err != nil {
+			return nil, err
+		}
+		return &actions[i], nil
+	} else {
+		for _, action := range actions {
+			if action.Name == actionName {
+				return &action, nil
+			}
+		}
+		return nil, fmt.Errorf("Unable to find action: %s", actionName)
 	}
-
-	searcher := func(input string, index int) bool {
-		action := actions[index]
-		name := strings.Replace(strings.ToLower(action.Name), " ", "", -1)
-		input = strings.Replace(strings.ToLower(input), " ", "", -1)
-
-		return strings.Contains(name, input)
-	}
-
-	actionPrompt := promptui.Select{
-		Label:             "actions",
-		Items:             actions,
-		Templates:         templates,
-		Searcher:          searcher,
-		StartInSearchMode: true,
-	}
-
-	i, _, err := actionPrompt.Run()
-	if err != nil {
-		return nil, err
-	}
-	cmdTmpl := actions[i]
-
-	return &cmdTmpl, nil
 }
 
 func (a *ActionRunner) GenerateCommand(obj runtime.Object, kind string, action *Action) ([]string, error) {

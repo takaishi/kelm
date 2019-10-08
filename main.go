@@ -38,6 +38,12 @@ func run() error {
 			Name: "namespace, n",
 		},
 		cli.StringFlag{
+			Name: "kind, k",
+		},
+		cli.StringFlag{
+			Name: "action, a",
+		},
+		cli.StringFlag{
 			Name:  "config, c",
 			Value: filepath.Join(homeDir(), ".kelm"),
 		},
@@ -61,9 +67,15 @@ func run() error {
 			k8s.SetNamespace(namespace)
 		}
 
-		kind, err := k8s.SelectKind()
-		if err != nil {
-			return err
+		kind := c.String("kind")
+		if kind == "" {
+			kind, err = k8s.SelectKind()
+			if err != nil {
+				return err
+			}
+			k8s.SetKind(kind)
+		} else {
+			k8s.SetKind(kind)
 		}
 
 		obj, err := k8s.SelectObjects(kind)
@@ -75,7 +87,9 @@ func run() error {
 		if err != nil {
 			return err
 		}
-		action, err := runner.Select(kind)
+
+		actionString := c.String("action")
+		action, err := runner.Select(k8s.GetKind(), actionString)
 		if err != nil {
 			return errors.Wrap(err, "failed to runner.Select()")
 		}

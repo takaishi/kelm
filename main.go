@@ -50,66 +50,69 @@ func run() error {
 	}
 
 	app.Action = func(c *cli.Context) error {
-
-		k8s, err := k8s.New(c.String("kubeconfig"))
-		if err != nil {
-			return err
-		}
-
-		namespace := c.String("namespace")
-		if namespace == "" {
-			namespace, err := k8s.SelectNamespace()
-			if err != nil {
-				return err
-			}
-			k8s.SetNamespace(namespace)
-		} else {
-			k8s.SetNamespace(namespace)
-		}
-
-		kind := c.String("kind")
-		if kind == "" {
-			kind, err = k8s.SelectKind()
-			if err != nil {
-				return err
-			}
-			k8s.SetKind(kind)
-		} else {
-			k8s.SetKind(kind)
-		}
-
-		obj, err := k8s.SelectObjects(kind)
-		if err != nil {
-			return err
-		}
-
-		runner, err := actions.NewActionRunner(k8s.GetNamespace(), c.String("config"))
-		if err != nil {
-			return err
-		}
-
-		actionString := c.String("action")
-		action, err := runner.Select(k8s.GetKind(), actionString)
-		if err != nil {
-			return errors.Wrap(err, "failed to runner.Select()")
-		}
-
-		//kind := obj.GetObjectKind().GroupVersionKind().Kind
-		cmdText, err := runner.GenerateCommand(*obj, kind, action)
-		if err != nil {
-			return errors.Wrap(err, "failed to runner.GenerateCommand()")
-		}
-
-		cmd := exec.Command(cmdText[0], cmdText[1:]...)
-		if err != nil {
-			return err
-		}
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Run()
-		return nil
+		return action(c)
 	}
 
 	return app.Run(os.Args)
+}
+
+func action(c *cli.Context) error {
+	k8s, err := k8s.New(c.String("kubeconfig"))
+	if err != nil {
+		return err
+	}
+
+	namespace := c.String("namespace")
+	if namespace == "" {
+		namespace, err := k8s.SelectNamespace()
+		if err != nil {
+			return err
+		}
+		k8s.SetNamespace(namespace)
+	} else {
+		k8s.SetNamespace(namespace)
+	}
+
+	kind := c.String("kind")
+	if kind == "" {
+		kind, err = k8s.SelectKind()
+		if err != nil {
+			return err
+		}
+		k8s.SetKind(kind)
+	} else {
+		k8s.SetKind(kind)
+	}
+
+	obj, err := k8s.SelectObjects(kind)
+	if err != nil {
+		return err
+	}
+
+	runner, err := actions.NewActionRunner(k8s.GetNamespace(), c.String("config"))
+	if err != nil {
+		return err
+	}
+
+	actionString := c.String("action")
+	action, err := runner.Select(k8s.GetKind(), actionString)
+	if err != nil {
+		return errors.Wrap(err, "failed to runner.Select()")
+	}
+
+	//kind := obj.GetObjectKind().GroupVersionKind().Kind
+	cmdText, err := runner.GenerateCommand(*obj, kind, action)
+	if err != nil {
+		return errors.Wrap(err, "failed to runner.GenerateCommand()")
+	}
+
+	cmd := exec.Command(cmdText[0], cmdText[1:]...)
+	if err != nil {
+		return err
+	}
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Run()
+	return nil
 }

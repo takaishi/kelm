@@ -113,6 +113,14 @@ func (a *ActionRunner) Select(kind string, actionName string) (*Action, error) {
 	}
 }
 
+func joinLabels(matchLabels map[string]interface{}) string {
+	r := []string{}
+	for k, v := range matchLabels {
+		r = append(r, fmt.Sprintf("%s=%s", k, v))
+	}
+	return strings.Join(r, ",")
+}
+
 func (a *ActionRunner) GenerateCommand(obj runtime.Object, kind string, action *Action) ([]string, error) {
 	data, err := json.Marshal(obj)
 	if err != nil {
@@ -129,6 +137,10 @@ func (a *ActionRunner) GenerateCommand(obj runtime.Object, kind string, action *
 		"Kind":      kind,
 	}
 
+	funcs := template.FuncMap{
+		"joinLabels": joinLabels,
+	}
+
 	for _, variable := range action.Variables {
 		j := jsonpath.New(variable.Name)
 		j.Parse(variable.JSONPath)
@@ -140,7 +152,7 @@ func (a *ActionRunner) GenerateCommand(obj runtime.Object, kind string, action *
 		d[variable.Name] = tmp.String()
 	}
 
-	tmpl, err := template.New("command").Parse(action.Command)
+	tmpl, err := template.New("command").Funcs(funcs).Parse(action.Command)
 	if err != nil {
 		return nil, err
 	}

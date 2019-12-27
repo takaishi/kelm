@@ -1,5 +1,6 @@
 # Kelm
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/takaishi/kelm)](https://goreportcard.com/report/github.com/takaishi/kelm)
 [![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)][license]
 
 [license]: https://github.com/takaishi/kelm/blob/master/LICENSE

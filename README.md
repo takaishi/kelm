@@ -1,5 +1,9 @@
 # Kelm
 
+[![MIT License](http://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)][license]
+
+[license]: https://github.com/takaishi/kelm/blob/master/LICENSE
+
 Interactive kubernetes operator like a peco and Emacs helm.
 
 ![](./docs/images/example.gif)
@@ -37,10 +41,6 @@ actions:
       command: 'ssh {{ .address }}'
 
 ```
-
-## Licence
-
-[MIT](https://github.com/takaishi/tool/blob/master/LICENCE)
 
 ## Author
 
